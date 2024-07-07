@@ -1,0 +1,139 @@
+//Ichou Aymane L3B 21007668 
+
+Mon projet consistait à appliquer l'algorithme de compression LZW sur des images et établir son efficacité par rapport à un algorithme concurrent RLE, j'ai personnelement utilisé la version naïve de celui-ci.
+En fonction de l'image donné, il n'y a pas un algorithme qui a l'avantage absolu sur l'autre. 
+En fonction des groupements ou de l'ordonnancement des pixels, l'un va être avantageux sur l'autre. 
+Mais si nous changeons d'image, l'autre prend le dessus. 
+
+De manière générale, RLE se montre plus efficace lorsque les couleurs sont unis dans un groupement de pixel, autrement dit, une partie de l'image. 
+Cependant LZW se montre plus efficace sur des images à caractère répété, imaginons qu'une image est une suite de nuage sur fond bleu, LZW se montrera plus efficace. 
+En terme de rapidité, RLE est bien plus rapide que LZW. 
+La lenteur de LZW est dû à la recherche dans le dictionnaire qui peut s'avérer longue lorsque l'image grandi de plus en plus, avec des variations de pixels très prononcé.
+Je pense que le formatage des données est aussi un élément à prendre en compte. 
+Dans RLE, les données sont séparés par un simple |data|data etc... , tandis que dans LZW, elles sont ordonnés ainsi <data><data>. 
+
+
+-------------------Les différentes structures utilisés: ---------------------------
+
+struct couple{
+	char * cle;
+	int valeur ; 
+};
+typedef struct couple couple_t ; 
+
+Elle sert à créer les couples (clé,valeur) dans le dictionnaire. 
+
+struct dictionnaire{
+	couple_t * dico ; 
+	int nb_element;
+	int nb_max ; 
+};
+typedef struct dictionnaire dictionnaire_t ; 
+
+L'élément principale de l'algorithme qui est le dictionnaire, la compression va pouvoir se faire grâce à lui. 
+Sans lui, il n'y aura pas de compression possible. C'est dans celui-ci que va venir être stockés les données compressés au fur et à mesure de la compression. 
+
+struct tab{
+	int taille ; 
+	int * tab ; 
+};
+typedef struct tab tab_t ; 
+
+Structure simple qui permet l'envoie d'un tableau avec sa taille 
+
+
+-------------------Les différentes fonctions utilisées: ---------------------------
+
+dictionnaire_t init_dico(int nb_elem);
+Initialisation du dictionnaire, avec le pré-remplissage de chaque champ de celui ci. 
+
+void free_dico(dictionnaire_t * dico) ; 
+Libération de la mémoire emprunté par le dictionnaire. 
+
+void print_dico(dictionnaire_t  dico);
+void print_dico_t(dictionnaire_t * dico);
+Fonction similaire qui permettent toutes les deux d'imprimer un dictionnaire 	
+
+void add_elem_dico(dictionnaire_t * dico , char * chaine , int valeur);
+Fonction qui va permette l'ajout d'un element dans le dictionnaire 
+
+int val_find_dico(dictionnaire_t * dico , char * chaine);
+Fonction qui prend une clé et va cherche la valeur associé 
+
+char * val_find_dico_with_val(dictionnaire_t * dico , int value);
+Fonction inverse de la précédente qui va rechercher une clé grâce à une valeur 
+
+int bool_find_dico(dictionnaire_t * dico , char * cle);
+int bool_find_dico_with_value(dictionnaire_t * dico , int value);
+Fonction similaire a val_find_dico et val_find_dico_with_val, mais qui renvoient un booléen 
+
+int nb_of_chiffre(int nombre);
+Fonction qui prend un nombre et renvoie son nombre de chiffre 
+
+char * int_to_string(int nombre);
+Fonction qui tranforme un nombre 123 en  chaine de caractere "123". 
+Gère aussi l'allocation de la mémoire nécessaire. 
+
+
+void remove_some_character(char *str, int nb) ;
+Fonction qui permet de retirer un certain nombre de caractère à la fin d'une chaine 
+
+
+tab_t format_char_to_tab(char * chaine);
+Transforme une chaine de caractère formaté avec des valeurs en tableau de valeur 
+"123|234|111" -> [123,234,111]
+
+char* premiere_valeur(char* chaine) ;
+Fonction qui permet de récuperer la premiere valeur dans une chaine formaté 
+"123|234|111" -> "123"
+int nombre_elements(char *chaine); 
+Fonction qui permet de compter le nombre d'elements dans une chaine formaté: 
+"123|234|111" -> 3 
+
+GLubyte* ord_RRRGGGBBB_to_RGBRGBRGB(int* tab, int taille) ; 
+Fonction inverse de tri_color qui va permettre de remettre les pixels dans un ordre normal style fichier ppm
+
+char * add_tab_to_dico_and_write(Image * image ,  dictionnaire_t * dico, char * fichier_res) ; 
+Fonction qui va permette la lecture des données d'une image, l'ajout des données dans le dictionnaire, et la compression des données dans un fichier annexe. 
+
+Image * decompression_lzw(dictionnaire_t * new_dico,  char * fichier);
+Fonction qui lit qui un fichier qui a été compressé par la fonction add_tab_to_dico_and_write, 
+et renvoie une image. 
+
+
+------------------------------- Les résultats obtenus --------------------------------
+
+Voici les résultats obtenues après avoir comparé les algorithme RLE et LZW sur 7 images. 
+
+Nom    -> Nom du fichier format ppm, disponible dans le dossier test_image
+Taille -> taille de l'image en largeur et hauteur 
+Espace -> taille de l'image en octets 
+RLE    -> taille du fichier en octet après une compression avec l'algorithme RLE 
+LZW    -> taille du fichier en octet après une compression avec l'algorithme LZW 
+
+Tableau résumant les résultats obtenus :
+---------------------------------------------------------------------------------------------------
+|     Nom      | Taille   |   Espace  |      RLE     |        LZW                                  |
+---------------------------------------------------------------------------------------------------
+|requin_leopard| 1024x768 |   2.4MO   |     12.2 MO  |    3.8Mo(stoppé à la moitié car trop long)  |
+---------------------------------------------------------------------------------------------------
+|test          | 4x4      |   105 o   |     17  o    |    96 o                                     |
+---------------------------------------------------------------------------------------------------
+|vertige       | 10x10    |   359 o   |     765 o    |    826 o                                    |
+---------------------------------------------------------------------------------------------------
+|image_300_150 | 300x150  |  135.1 ko |     587.8 ko |    313.6 ko                                 |
+--------------------------------------------------------------------------------------------------- 
+|image_500_250 | 500x250  |  375.1 ko |     1.8 Mo   |    913.3 ko                                 |
+--------------------------------------------------------------------------------------------------- 
+|red_guys      | 842x1024 |  2.6 Mo   |     278.ko   |    211.8 ko                                 |
+---------------------------------------------------------------------------------------------------
+|suite_de_nuage| 626x402  |  755 ko   |     3.2 Mo   |    1.5 Mo                                   |
+---------------------------------------------------------------------------------------------------
+
+
+Notes annexes : 
+Je n'ai pas pu traiter la conversion et les tests avec RLE sur des données de type HSV, cependant j'avais tout de même programmé la conversion de RGB vers HSV(ou TSV en français) sous le nom de "rgb_to_hsv.c"
+Et pour palier le problème de la présence des nombres flottant dans la conversion hsv, j'ai imaginé que nous pouvions
+limité à deux chiffre après la virgule dans le conversion de rgb à hsv, puis dans la compression nous multiplions tout
+par 100, et dans la décompression nous divisions tout par 100 pour retrouver les valeurs de base. 
+
